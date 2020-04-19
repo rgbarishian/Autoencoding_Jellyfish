@@ -16,36 +16,44 @@ def fixed_generator(generator):
 img_width, img_height = 424, 424
 
 #train paths
-train_data_dir = '/home/ryan/Documents/Galaxy_Zoo/Jell_Test/Grayscale/OnlyPositive_Autoencoder/Train'
-validation_data_dir = '/home/ryan/Documents/Galaxy_Zoo/Jell_Test/Grayscale/OnlyPositive_Autoencoder/Validation'
+train_data_dir = '/home/ryan/Documents/DATA/Autoencoder/Plain/Training'
+validation_data_dir = '/home/ryan/Documents/DATA/Autoencoder/Plain/Validation'
+#train_data_dir = '/home/ryan/Documents/DATA/Autoencoder/Sliced/Training'
+#validation_data_dir = '/home/ryan/Documents/DATA/Autoencoder/Sliced/Validation'
 
 #batch data
-nb_validation_samples = 44
+nb_validation_samples = 58
 batch_size = 35
 
 # this is the augmentation configuration we will use for training
 train_datagen = ImageDataGenerator(
         rescale=1./255,
         shear_range=0.2,
-        zoom_range=0.2,
+        zoom_range=0.3,
         rotation_range=360,
-        width_shift_range=.25,
-        height_shift_range=.25,
+        width_shift_range=.3,
+        height_shift_range=.3,
         fill_mode='wrap')
 train_generator = train_datagen.flow_from_directory(
         train_data_dir,
         target_size=(img_width, img_height),
         batch_size=batch_size,
-        class_mode=None)
-#print(type(train_generator))
+        class_mode=None,
+        shuffle=True,
+        seed=5)
+
 # this is the augmentation configuration we will use for testing:
 # only rescaling
-test_datagen = ImageDataGenerator(rescale=1./255)
+test_datagen = ImageDataGenerator(
+        rescale=1./255,
+        rotation_range=360)
 validation_generator = test_datagen.flow_from_directory(
         validation_data_dir,
         target_size=(img_width, img_height),
         batch_size=batch_size,
-        class_mode=None)
+        class_mode=None,
+        shuffle=True,
+        seed=12)
 
 #Network
 input_img = Input(shape=(img_width, img_height,3))
@@ -78,13 +86,16 @@ autoencoder.compile(optimizer=myoptimizer, loss='binary_crossentropy')
 
 autoencoder.fit_generator(
         fixed_generator(train_generator),
-        steps_per_epoch=3,
+        steps_per_epoch=5,
         epochs=20,
         validation_data=fixed_generator(validation_generator),
-        validation_steps=3
+        validation_steps=1
         )
 #summaries
 print(autoencoder.summary())
 ##save weights and and model start conv network with these weights
 encoder = Model(input_img, encoded)
 encoder.save_weights('Encoded.h5')
+
+decoder = Model(input_img, decoded)
+decoder.save_weights('Decoded.h5')
