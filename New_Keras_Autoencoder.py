@@ -16,10 +16,10 @@ def fixed_generator(generator):
 img_width, img_height = 424, 424
 
 #train paths
+#Only train on positive images/features, but they are not labled
 train_data_dir = '/home/ryan/Documents/DATA/Autoencoder/Plain/Training'
 validation_data_dir = '/home/ryan/Documents/DATA/Autoencoder/Plain/Validation'
-#train_data_dir = '/home/ryan/Documents/DATA/Autoencoder/Sliced/Training'
-#validation_data_dir = '/home/ryan/Documents/DATA/Autoencoder/Sliced/Validation'
+
 
 #batch data
 nb_validation_samples = 58
@@ -67,8 +67,6 @@ x = Dense(32, activation='relu', name='Dense2')(x)
 x = Convolution2D(8, (3, 3), activation='relu', padding='same', name='Conv3')(x)
 encoded = MaxPooling2D((2, 2), padding='same', name='Pool3')(x)
 
-# at this point the representation is (8, 4, 4) i.e. 128-dimensional
-#in future try conv2dtranspose for decoding layer
 x = Convolution2D(8, (3, 3), activation='relu', padding='same')(encoded)
 x = UpSampling2D((2, 2))(x)
 x = Convolution2D(8, (3, 3), activation='relu', padding='same')(x)
@@ -79,7 +77,7 @@ x = Dense(64, activation='relu')(x)
 x = UpSampling2D((2, 2))(x)
 decoded = Convolution2D(3, (3, 3), activation='sigmoid', padding='same')(x)
 
-#compile and run
+#compile and run entire network
 autoencoder = Model(input_img, decoded)
 myoptimizer = optimizers.Adam(lr=0.01, beta_1=0.9, beta_2=0.999, amsgrad=False)
 autoencoder.compile(optimizer=myoptimizer, loss='binary_crossentropy')
@@ -93,9 +91,11 @@ autoencoder.fit_generator(
         )
 #summaries
 print(autoencoder.summary())
-##save weights and and model start conv network with these weights
+
+##save weights of encoded model start conv network with these weights
 encoder = Model(input_img, encoded)
 encoder.save_weights('Encoded.h5')
 
+##save weights of full decoded model
 decoder = Model(input_img, decoded)
 decoder.save_weights('Decoded.h5')
